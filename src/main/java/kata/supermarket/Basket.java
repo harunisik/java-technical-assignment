@@ -1,14 +1,20 @@
 package kata.supermarket;
 
+import static java.util.Objects.nonNull;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import kata.supermarket.discounts.BuyOneGetOneFreeDiscount;
+import kata.supermarket.discounts.BuyOneKiloForHalfPriceDiscount;
+import kata.supermarket.discounts.BuyThreeItemsForPriceOfTwoDiscount;
+import kata.supermarket.discounts.DiscountOperationByUnit;
+import kata.supermarket.discounts.DiscountOperationByWeight;
 
 public class Basket {
+
     private final List<Item> items;
 
     public Basket() {
@@ -28,6 +34,7 @@ public class Basket {
     }
 
     private class TotalCalculator {
+
         private final List<Item> items;
 
         TotalCalculator() {
@@ -36,17 +43,15 @@ public class Basket {
 
         private BigDecimal subtotal() {
             return items.stream().map(Item::price)
-                    .reduce(BigDecimal::add)
-                    .orElse(BigDecimal.ZERO)
-                    .setScale(2, RoundingMode.HALF_UP);
+                .reduce(BigDecimal::add)
+                .orElse(BigDecimal.ZERO)
+                .setScale(2, RoundingMode.HALF_UP);
         }
 
         /**
-         * TODO: This could be a good place to apply the results of
-         *  the discount calculations.
-         *  It is not likely to be the best place to do those calculations.
-         *  Think about how Basket could interact with something
-         *  which provides that functionality.
+         * TODO: This could be a good place to apply the results of the discount calculations. It is not likely to be
+         * the best place to do those calculations. Think about how Basket could interact with something which provides
+         * that functionality.
          */
         private BigDecimal discounts() {
             return new DiscountCalculator().calculate();
@@ -58,6 +63,7 @@ public class Basket {
     }
 
     private class DiscountCalculator {
+
         private final List<Item> items;
 
         DiscountCalculator() {
@@ -70,57 +76,66 @@ public class Basket {
 
             for (Item item : items) {
 
-                DiscountScheme discountScheme = DiscountScheme.NONE;
-                Boolean discountApplied = false;
-
-                if (item instanceof ItemByUnit) {
-                    discountScheme = ((ItemByUnit)item).discountScheme();
-                    discountApplied =  ((ItemByUnit)item).getDiscountApplied();
-                }
-                else if(item instanceof ItemByWeight) {
-                    discountScheme = ((ItemByWeight)item).discountScheme();
-                    discountApplied =  ((ItemByWeight)item).getDiscountApplied();
-                }
-
-                if (discountApplied) {
+                if (item.isDiscountApplied()) {
                     continue;
                 }
 
-                switch (discountScheme) {
-                    case NONE:
-                        break;
-                    case BUY_ONE_GET_ONE_FREE:
-                        long count = items.stream()
-                            .filter(item1 -> {
-                                ItemByUnit itemByUnit = (ItemByUnit) item1;
-                                if(itemByUnit.productId().equals(((ItemByUnit) item).productId())) {
-                                    itemByUnit.setDiscountApplied(true);
-                                    return true;
-                                }
-                                return false;
-                            })
-                            .count();
-                        totalDiscount = totalDiscount.add(buyOneGetOneFree(item.price(), count));
-                        break;
-                    case BUY_ONE_KILO_FOR_HALF_PRICE:
+                if (item instanceof ItemByUnit) {
+                    DiscountOperationByUnit discountOperationByUnit = null;
+
+                    switch (item.discountScheme()) {
+                        case BUY_ONE_GET_ONE_FREE:
+                            discountOperationByUnit = new BuyOneGetOneFreeDiscount();
+                            break;
+                        case BUY_THREE_ITEMS_FOR_PRICE_OF_TWO:
+                            discountOperationByUnit = new BuyThreeItemsForPriceOfTwoDiscount();
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if (nonNull(discountOperationByUnit)) {
+                        long count = findCountAndMarkDiscountApplied((ItemByUnit) item);
+                        BigDecimal discount = discountOperationByUnit.appylDiscount((ItemByUnit) item, count);
+                        totalDiscount = totalDiscount.add(discount);
+                    }
+
+                } else if (item instanceof ItemByWeight) {
+
+                    DiscountOperationByWeight discountOperationByWeight = null;
+
+                    switch (item.discountScheme()) {
+                        case BUY_ONE_KILO_FOR_HALF_PRICE:
+                            discountOperationByWeight = new BuyOneKiloForHalfPriceDiscount();
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if (nonNull(discountOperationByWeight)) {
                         ItemByWeight itemByWeight = (ItemByWeight) item;
+                        BigDecimal discount = discountOperationByWeight.appylDiscount(itemByWeight);
+                        totalDiscount = totalDiscount.add(discount);
                         itemByWeight.setDiscountApplied(true);
-                        totalDiscount = totalDiscount.add(buyOneKiloForHalfPrice(item.price()));
-                        break;
+                    }
                 }
             }
 
             return totalDiscount;
         }
 
-        private BigDecimal buyOneGetOneFree(BigDecimal pricePerUnit, long count) {
-            if (count == 0 || count == 1) return BigDecimal.ZERO;
-            return pricePerUnit.multiply(new BigDecimal(count / 2));
+        private long findCountAndMarkDiscountApplied(ItemByUnit itemByUnit) {
+            return items.stream()
+                .filter(item -> item instanceof ItemByUnit)
+                .filter(item -> {
+                    if (((ItemByUnit) item).productId().equals(itemByUnit.productId())) {
+                        item.setDiscountApplied(true);
+                        return true;
+                    }
+                    return false;
+                })
+                .count();
         }
 
-        private BigDecimal buyOneKiloForHalfPrice(BigDecimal price) {
-            if (BigDecimal.ZERO.equals(price)) return BigDecimal.ZERO;
-            return price.divide(new BigDecimal(2)).setScale(2, BigDecimal.ROUND_HALF_UP);
-        }
     }
 }

@@ -1,6 +1,7 @@
 package kata.supermarket;
 
 import java.math.BigDecimal;
+import kata.supermarket.discounts.DiscountScheme;
 
 public class Product {
 

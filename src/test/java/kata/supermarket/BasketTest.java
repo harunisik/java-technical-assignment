@@ -1,16 +1,16 @@
 package kata.supermarket;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import kata.supermarket.discounts.DiscountScheme;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class BasketTest {
 
@@ -25,14 +25,18 @@ class BasketTest {
 
     static Stream<Arguments> basketProvidesTotalValue() {
         return Stream.of(
-                noItems(),
-                aSingleItemPricedPerUnit(),
-                multipleItemsPricedPerUnit(),
-                multipleItemsPricedPerUnitWithDiscount(),
-                multipleItemsPricedPerUnitWithDiscount2(),
-                multipleItemsPricedPerUnitWithDiscount3(),
-                aSingleItemPricedByWeight(),
-                multipleItemsPricedByWeight()
+            noItems(),
+            aSingleItemPricedPerUnit(),
+            multipleItemsPricedPerUnit(),
+            multipleItemsPricedPerUnitWithDiscount(),
+            multipleItemsPricedPerUnitWithDiscount2(),
+            multipleItemsPricedPerUnitWithDiscount3(),
+            multipleItemsPricedPerUnitWithDiscount4(),
+            multipleItemsPricedPerUnitWithDiscount5(),
+            multipleItemsPricedPerUnitWithDiscount6(),
+            aSingleItemPricedByWeight(),
+            aSingleItemPricedByWeight2(),
+            multipleItemsPricedByWeight()
         );
     }
 
@@ -40,15 +44,19 @@ class BasketTest {
         return Arguments.of("a single weighed item", "1.25", Collections.singleton(twoFiftyGramsOfAmericanSweets()));
     }
 
+    private static Arguments aSingleItemPricedByWeight2() {
+        return Arguments.of("a single weighed item 2", "1.20", Collections.singleton(twoKilosOfTomato()));
+    }
+
     private static Arguments multipleItemsPricedByWeight() {
         return Arguments.of("multiple weighed items", "1.85",
-                Arrays.asList(twoFiftyGramsOfAmericanSweets(), twoHundredGramsOfPickAndMix())
+            Arrays.asList(twoFiftyGramsOfAmericanSweets(), twoHundredGramsOfPickAndMix())
         );
     }
 
     private static Arguments multipleItemsPricedPerUnit() {
         return Arguments.of("multiple items priced per unit", "2.04",
-                Arrays.asList(aPackOfDigestives(), aPintOfMilk()));
+            Arrays.asList(aPackOfDigestives(), aPintOfMilk()));
     }
 
     private static Arguments multipleItemsPricedPerUnitWithDiscount() {
@@ -57,12 +65,28 @@ class BasketTest {
     }
 
     private static Arguments multipleItemsPricedPerUnitWithDiscount2() {
-        return Arguments.of("multiple items priced per unit", "3.05",
+        return Arguments.of("multiple items priced per unit 2", "3.05",
             Arrays.asList(aPackOfDigestives(), aPackOfMilk(), aPackOfMilk()));
     }
+
     private static Arguments multipleItemsPricedPerUnitWithDiscount3() {
-        return Arguments.of("multiple items priced per unit", "4.55",
+        return Arguments.of("multiple items priced per unit 3", "4.55",
             Arrays.asList(aPackOfDigestives(), aPackOfMilk(), aPackOfMilk(), aPackOfMilk()));
+    }
+
+    private static Arguments multipleItemsPricedPerUnitWithDiscount4() {
+        return Arguments.of("multiple items priced per unit 4", "3.55",
+            Arrays.asList(aPackOfDigestives(), aBread(), aBread()));
+    }
+
+    private static Arguments multipleItemsPricedPerUnitWithDiscount5() {
+        return Arguments.of("multiple items priced per unit 5", "3.55",
+            Arrays.asList(aPackOfDigestives(), aBread(), aBread(), aBread()));
+    }
+
+    private static Arguments multipleItemsPricedPerUnitWithDiscount6() {
+        return Arguments.of("multiple items priced per unit 6", "4.55",
+            Arrays.asList(aPackOfDigestives(), aBread(), aBread(), aBread(), aBread()));
     }
 
     private static Arguments aSingleItemPricedPerUnit() {
@@ -81,6 +105,10 @@ class BasketTest {
         return new Product(3, new BigDecimal("1.5"), DiscountScheme.BUY_ONE_GET_ONE_FREE).oneOf();
     }
 
+    private static Item aBread() {
+        return new Product(4, new BigDecimal("1"), DiscountScheme.BUY_THREE_ITEMS_FOR_PRICE_OF_TWO).oneOf();
+    }
+
     private static Item aPackOfDigestives() {
         return new Product(2, new BigDecimal("1.55")).oneOf();
     }
@@ -97,7 +125,15 @@ class BasketTest {
         return new WeighedProduct(new BigDecimal("2.99"));
     }
 
+    private static WeighedProduct aKiloOfTomato() {
+        return new WeighedProduct(new BigDecimal("1.20"), DiscountScheme.BUY_ONE_KILO_FOR_HALF_PRICE);
+    }
+
     private static Item twoHundredGramsOfPickAndMix() {
         return aKiloOfPickAndMix().weighing(new BigDecimal(".2"));
+    }
+
+    private static Item twoKilosOfTomato() {
+        return aKiloOfTomato().weighing(new BigDecimal("2.0"));
     }
 }

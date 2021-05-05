@@ -1,11 +1,11 @@
 package kata.supermarket;
 
 import java.math.BigDecimal;
+import kata.supermarket.discounts.DiscountScheme;
 
-public class ItemByUnit implements Item {
+public class ItemByUnit extends Item {
 
     private final Product product;
-    private Boolean discountApplied = Boolean.FALSE;
 
     ItemByUnit(final Product product) {
         this.product = product;
@@ -15,6 +15,7 @@ public class ItemByUnit implements Item {
         return product.pricePerUnit();
     }
 
+    @Override
     public DiscountScheme discountScheme() {
         return product.discountScheme();
     }
@@ -23,11 +24,4 @@ public class ItemByUnit implements Item {
         return product.getProductId();
     }
 
-    public Boolean getDiscountApplied() {
-        return discountApplied;
-    }
-
-    public void setDiscountApplied(Boolean discountApplied) {
-        this.discountApplied = discountApplied;
-    }
 }
